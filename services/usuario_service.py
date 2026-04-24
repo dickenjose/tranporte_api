@@ -77,3 +77,19 @@ def buscar_usuario(correo=None, ci=None):
         raise HTTPException(404, "Usuario no encontrado")
 
     return usuario
+def login_usuario(correo, password):
+    # 🔍 Buscar usuario por correo
+    usuario = usuarios.find_one({"correo": correo})
+
+    if not usuario:
+        return None
+
+    # 🔐 Verificar contraseña con bcrypt
+    if not bcrypt.checkpw(password.encode(), usuario["password"].encode()):
+        return None
+
+    # 🚫 Verificar estado (opcional pero recomendable)
+    if usuario.get("estado") != "activo":
+        raise HTTPException(403, "Usuario inactivo")
+
+    return usuario
