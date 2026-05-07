@@ -53,7 +53,7 @@ def recargar_saldo(uid, monto, usuario_id, metodo="efectivo", tx_id=None):
 
     # 🧾 REGISTRO DE RECARGA
     recarga_doc = {
-        "uid": uid,
+        
         "tarjeta_id": tarjeta["_id"],
         "cliente_id": tarjeta.get("cliente_id"),
 

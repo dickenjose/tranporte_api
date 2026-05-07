@@ -9,12 +9,11 @@ transacciones = db.transacciones
 
 def procesar_pago(uid, tipo_tarifa, bus_id):
 
-    # 🔍 buscar tarjeta
+    # 🔍 buscar tarjeta por UID (solo entrada)
     tarjeta = tarjetas.find_one({"uid": uid})
 
     if not tarjeta:
         transacciones.insert_one({
-            "uid": uid,
             "estado": "error",
             "mensaje": "Tarjeta no registrada",
             "fecha": datetime.utcnow()
@@ -30,7 +29,7 @@ def procesar_pago(uid, tipo_tarifa, bus_id):
 
     ultima = transacciones.find_one(
         {
-            "uid": uid,
+            "tarjeta_id": tarjeta["_id"],
             "estado": "aprobado"
         },
         sort=[("fecha", -1)]
@@ -65,10 +64,7 @@ def procesar_pago(uid, tipo_tarifa, bus_id):
     # ❌ saldo insuficiente
     if saldo < precio:
         transacciones.insert_one({
-            "uid": uid,
             "tarjeta_id": tarjeta["_id"],
-            "cliente_id": tarjeta.get("cliente_id"),
-
             "dispositivo_id": bus_id,
 
             "tipo_tarifa": tipo_tarifa,
@@ -85,21 +81,25 @@ def procesar_pago(uid, tipo_tarifa, bus_id):
 
         return {"estado": "rechazado", "mensaje": "Saldo insuficiente"}
 
-    # 💸 calcular nuevo saldo
-    nuevo_saldo = saldo - precio
-
-    # 🔄 actualizar saldo
-    tarjetas.update_one(
-        {"_id": tarjeta["_id"]},
-        {"$set": {"saldo": nuevo_saldo}}
+    # 💸 actualizar saldo de forma segura
+    resultado = tarjetas.update_one(
+        {
+            "_id": tarjeta["_id"],
+            "saldo": {"$gte": precio}
+        },
+        {
+            "$inc": {"saldo": -precio}
+        }
     )
 
-    # 🧾 guardar transacción PRO
-    transacciones.insert_one({
-        "uid": uid,
-        "tarjeta_id": tarjeta["_id"],
-        "cliente_id": tarjeta.get("cliente_id"),
+    if resultado.modified_count == 0:
+        return {"estado": "rechazado", "mensaje": "Saldo insuficiente"}
 
+    nuevo_saldo = saldo - precio
+
+    # 🧾 guardar transacción
+    transacciones.insert_one({
+        "tarjeta_id": tarjeta["_id"],
         "dispositivo_id": bus_id,
 
         "tipo_tarifa": tipo_tarifa,
@@ -117,9 +117,10 @@ def procesar_pago(uid, tipo_tarifa, bus_id):
         "fecha": datetime.utcnow()
     })
 
-    # 📤 respuesta final
+    # 📤 respuesta final (puedes devolver UID sin guardarlo)
     return {
         "estado": "aprobado",
         "saldo": nuevo_saldo,
-        "mensaje": "OK"
+        "mensaje": "OK",
+        "uid": uid
     }

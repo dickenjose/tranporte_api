@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 
 
 class Perfil(BaseModel):
@@ -12,7 +12,10 @@ class UsuarioCreate(BaseModel):
     telefono: Optional[str] = None
     correo: EmailStr
     password: str
-    rol: str = "cliente"
+
+    # 🔥 CAMBIO AQUÍ
+    roles: Optional[List[str]] = ["cliente"]
+
     perfil: Optional[Perfil] = None
 
 
@@ -21,6 +24,9 @@ class UsuarioUpdate(BaseModel):
     telefono: Optional[str] = None
     correo: Optional[EmailStr] = None
     password: Optional[str] = None
-    rol: Optional[str] = None
+
+    # 🔥 CAMBIO AQUÍ
+    roles: Optional[List[str]] = None
+
     perfil: Optional[Perfil] = None
     estado: Optional[str] = None

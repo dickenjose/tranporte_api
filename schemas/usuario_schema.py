@@ -5,10 +5,12 @@ def usuario_schema(usuario) -> dict:
         "ci": usuario["ci"],
         "correo": usuario["correo"],
         "telefono": usuario.get("telefono"),
-        "rol": usuario.get("rol"),
+
+        # 🔥 CAMBIO CLAVE
+        "roles": usuario.get("roles", ["cliente"]),
+
         "estado": usuario.get("estado"),
-        "perfil": usuario.get("perfil", {})  # 🔥 ESTA LÍNEA FALTABA
-        
+        "perfil": usuario.get("perfil", {})
     }
 
 
